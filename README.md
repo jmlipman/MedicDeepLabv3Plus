@@ -1,19 +1,3 @@
-Trying:
-python train.py --input ~/data/in/MRI_Training_Data --output ~/data/in/Trained_Models/
-
-To try:
-python train.py --input ~/data/in/MRI_Training_Data/ --output ~/data/in/Trained_Models/ --validation ~/data/in/MRI_Validation_Data/
-
-
-python eval.py --input ~/data/in/MRI_Testing_Data --output ~/data/out/Segmentation_Results --model trained_models/MedicDeepLabv3Plus-model-300_1
-
-TODO:
-- Actually, for the output, I need to specify the folder where I want the output to be, otherwise it will create it.
-
-
-
-
-
 MedicDeepLabv3+
 ======================
 
@@ -44,23 +28,19 @@ This implementation of MedicDeepLabv3+ allows combining several models trained s
 .
  ├── eval.py # Generates segmentation masks. It requires a file with the trained parameters of MedicDeepLabv3+ (provided by train.py)
  ├── train.py # Optimizes MedicDeepLabv3+ and saves its optimized parameters (required by eval.py)
- ├── lib
- │   ├── losses.py # Cross Entropy + Dice Loss functions
- │   ├── metric.py # Metrics to quantify segmentations quality i.e. Dice coeff., Hausdorff distance, Compactness
- │   ├── utils.py # Other functions.
- │   ├── blocks
- │   │   ├── BasicBlocks.py # Contains basic operations of the ConvNet
- │   │   └── MedicDeepLabv3PlusBlocks.py # Blocks of operations for MedicDeepLabv3+
- │   ├── data
- │   │   ├── BaseDataset.py # Basic dataset operations
- │   │   └── DataWrapper.py # Reads and parses the NIfTI files
- │   └── models
- │      ├── BaseModel.py # Contains main training and evaluation procedures
- │      └── MedicDeepLabv3Plus.py # Pytorch definition of our model
- └── trained_models # Trained MedicDeepLabv3+ parameters
-     ├── MedicDeepLabv3Plus-model-300_1
-     ├── MedicDeepLabv3Plus-model-300_2
-     └── MedicDeepLabv3Plus-model-300_3
+ └── lib
+     ├── losses.py # Cross Entropy + Dice Loss functions
+     ├── metric.py # Metrics to quantify segmentations quality i.e. Dice coeff., Hausdorff distance, Compactness
+     ├── utils.py # Other functions.
+     ├── blocks
+     │   ├── BasicBlocks.py # Contains basic operations of the ConvNet
+     │   └── MedicDeepLabv3PlusBlocks.py # Blocks of operations for MedicDeepLabv3+
+     ├── data
+     │   ├── BaseDataset.py # Basic dataset operations
+     │   └── DataWrapper.py # Reads and parses the NIfTI files
+     └── models
+        ├── BaseModel.py # Contains main training and evaluation procedures
+        └── MedicDeepLabv3Plus.py # Pytorch definition of our model
 ```
 
 ### 2. Installation and Requirements
@@ -77,7 +57,7 @@ This implementation of MedicDeepLabv3+ allows combining several models trained s
 
 1. Install dependencies with pip
 ```cshell
-pip install scipy, scikit-image, nibabel
+pip install scipy scikit-image nibabel
 ```
 
 2. Download source code
