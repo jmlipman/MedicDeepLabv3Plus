@@ -1,6 +1,10 @@
 MedicDeepLabv3+
 ======================
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4009212.svg)](https://doi.org/10.5281/zenodo.4009212) (Software)
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4009246.svg)](https://doi.org/10.5281/zenodo.4009246) (Trained models)
+
 Repository of MedicDeepLabv3+
 
 ### Table of Contents
@@ -146,6 +150,8 @@ By default, after producing the segmentations, a post-processing procedure remov
 Optionally, if the ground truth is provided in the same folder as the data (as described in [2.3. Image format](#23-image-format)), it is possible to measure the performance of MedicDeepLabv3+, which by default uses Dice coefficient and you can add other metrics with --metrics.
 
 Finally, you can choose in which GPU to execute eval.py, as in train.py. Since eval.py does not take too long to execute, unlike train.py, evaluating MedicDeepLabv3+ on the CPU with --gpu -1 is a viable option.
+
+Note: we provide three trained MedicDeepLabv3+ models at DOI:10.5281/zenodo.4009246
 
 ```cshell
 # Minimum training setup
