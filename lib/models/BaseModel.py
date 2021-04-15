@@ -176,13 +176,13 @@ class BaseModel(nn.Module):
                 if remove_islands:
                     y_pred_cpu = removeSmallIslands(y_pred_cpu, thr=20)
 
-                # If GT was provided
+                # Predictions (and GT) separate the two hemispheres
+                # combineLabels will combine these such that it creates
+                # brainmask and contra-hemisphere ROIs instead of
+                # two different hemisphere ROIs.
+                y_pred_cpu = combineLabels(y_pred_cpu)
+                # If GT was provided it measures the performance
                 if len(y_true_cpu.shape) > 1:
-                    # Predictions (and GT) separate the two hemispheres
-                    # combineLabels will combine these such that it creates
-                    # brainmask and contra-hemisphere ROIs instead of
-                    # two different hemisphere ROIs.
-                    y_pred_cpu = combineLabels(y_pred_cpu)
                     y_true_cpu = combineLabels(y_true_cpu)
 
                     results[id_] = Measure.all(y_pred_cpu, y_true_cpu)
