@@ -43,6 +43,8 @@ def get_arguments():
     parser.add_argument("--remove_islands", type=str2bool, nargs="?",
             default=True,
             help="Whether to apply the post-processing operation.")
+    parser.add_argument("--filters", type=int, default=32,
+            help="Number of filters (fewer filters -> lower GPU requirements)")
 
     # Other
     parser.add_argument("--output", type=str, required=True,
@@ -119,7 +121,7 @@ def main(args):
 
         os.makedirs(args.output + str(i+1))
 
-        model = MedicDeepLabv3Plus(modalities=1, n_classes=3)
+        model = MedicDeepLabv3Plus(modalities=1, n_classes=3, first_filters=args.filters)
         model.initialize(device=args.device, output=args.output + str(i+1) + "/",
                 model_state=model_state)
 
@@ -162,7 +164,7 @@ def main(args):
             result = 1.0*(np.sum(brains, axis=0) > (len(args.model)/2))
 
             # Saving majority voting
-            test_data.save(result, args.output + "majorityVoting/" + id_) 
+            test_data.save(result, info, args.output + "majorityVoting/" + id_) 
          
             if len(Y.shape) > 1:
                 Y = combineLabels(Y)

@@ -7,18 +7,15 @@ from lib.blocks.MedicDeepLabv3PlusBlocks import *
 from lib.blocks.BasicBlocks import *
 
 class MedicDeepLabv3Plus(BaseModel):
-    """
+    """My own version of DeepLabv3Plus with 3 skip connections
     """
     params = ["modalities", "n_classes", "first_filters", "dim"]
     def __init__(self, modalities, n_classes, first_filters=32, dim="3D"):
-        """Incorporates a skip connection in the upper-most level.
-           Replaces teh last convolution with a RatLesNetv2 block.
-        """
         super(MedicDeepLabv3Plus, self).__init__()
         
         self.interpol_mode = "bilinear" if dim == "2D" else "trilinear"
         # Xception
-        self.xception = Xception_DeepLabv3Plus_nskips(modalities, first_filters,
+        self.xception = Xception_MedicDeepLabv3Plus(modalities, first_filters,
                 n_classes, dim)
 
         self.aspp_L = DeepLabv3_ASPP(first_filters*64,
@@ -34,17 +31,14 @@ class MedicDeepLabv3Plus(BaseModel):
 
         self.conv1 = Conv(first_filters*16, first_filters*8, 3, padding=1)
         self.block1 = DeepLabv3Plus_ResNetBlock(first_filters*8, dim)
-        self.convout64 = Depthwise_Sep_Conv(first_filters*8, n_classes, Conv)
 
         self.conv2 = Conv(first_filters*8+first_filters*4, first_filters*4, 3, padding=1)
         self.block2 = DeepLabv3Plus_ResNetBlock(first_filters*4, dim)
-        self.convout128 = Depthwise_Sep_Conv(first_filters*4, n_classes, Conv)
 
         self.conv3 = Conv(first_filters*4+first_filters, first_filters*2, 3, padding=1)
         self.block3 = DeepLabv3Plus_ResNetBlock(first_filters*2, dim)
-
-        self.convout256 = Depthwise_Sep_Conv(first_filters*2, n_classes, Conv)
         self.conv_final = Conv(first_filters*2, n_classes, 3, padding=1)
+
 
         self.cat = Cat()
         self.interpolate = Interpolate()
@@ -62,55 +56,31 @@ class MedicDeepLabv3Plus(BaseModel):
 
         out = self.conv1(out) # Half # of filters
         out = self.block1(out)
-
-        # Attention mechanism 1
-        out64_pre = self.convout64(out)
-        out64 = self.interpolate(out64_pre, size=[18, 64, 64],
-                mode=self.interpol_mode, align_corners=False)
-
-        out64_imp = torch.sigmoid(torch.mean(out64_pre, dim=1).view(x.shape[0], 1, out64_pre.shape[2], out64_pre.shape[3], out64_pre.shape[4]))
-        out = out * out64_imp
-
         out = self.interpolate(out, size=skip2.shape[2:],
                 mode=self.interpol_mode, align_corners=False)
         out = self.cat([out, skip2], dim=1)
 
+
         out = self.conv2(out) # Half # of filters
         out = self.block2(out)
-
-        # Attention mechanism 2
-        out128_pre = self.convout128(out)
-        out128 = self.interpolate(out128_pre, size=[18, 128, 128],
-                mode=self.interpol_mode, align_corners=False)
-
-        out128_imp = torch.sigmoid(torch.mean(out128_pre, dim=1).view(x.shape[0], 1, out128_pre.shape[2], out128_pre.shape[3], out128_pre.shape[4]))
-        out = out * out128_imp
-
         out = self.interpolate(out, size=skip1.shape[2:],
                 mode=self.interpol_mode, align_corners=False)
         out = self.cat([out, skip1], dim=1)
 
         out = self.conv3(out) # Half # of filters
         out = self.block3(out)
-
-        # Attention mechanism 3
-        out256_pre = self.convout256(out)
-        out256_imp = torch.sigmoid(torch.mean(out256_pre, dim=1).view(x.shape[0], 1, out256_pre.shape[2], out256_pre.shape[3], out256_pre.shape[4]))
-        out = out * out256_imp
-
-        # block + last_conv
         out = self.conv_final(out)
+
         out = self.softmax(out, dim=1)
+        return (out, )
 
-        return (out, self.softmax(out128, dim=1), self.softmax(out64, dim=1))
-
-class Xception_DeepLabv3Plus_nskips(BaseModel):
+class Xception_MedicDeepLabv3Plus(BaseModel):
     """Xception used by a new version of DeepLabv3Plus that has 3 skip
        connections.
     """
     params = ["modalities", "first_filters", "n_classes", "dim"]
-    def __init__(self, modalities, first_filters=32, n_classes=20, dim="2D"):
-        super(Xception_DeepLabv3Plus_nskips, self).__init__()
+    def __init__(self, modalities, first_filters=32, n_classes=20, dim="3D"):
+        super(Xception_MedicDeepLabv3Plus, self).__init__()
 
         # Originally, first_filters = 32
         if dim == "2D":
@@ -131,9 +101,8 @@ class Xception_DeepLabv3Plus_nskips(BaseModel):
         ### Entry Flow
         self.xception_part1 = nn.Sequential(
                 Conv(modalities, nfi, kernel_size=3, stride=1, padding=1),
-                #DeepLabv3Plus_ResNetBlock(nfi, dim),
                 BN(nfi),
-                ReLU(),
+                ReLU()
                 )
 
         self.xception_part2 = nn.Sequential(
@@ -158,6 +127,7 @@ class Xception_DeepLabv3Plus_nskips(BaseModel):
             filters=[nfi*8, nf2, nf2, nf2], stride=2, dilation=1,
             skip_con="conv", dim=dim))
 
+        # Using 8 blocks instead of 16
         for i in range(8):
             layers2.append(Sep_Conv_DeepLabv3Plus(
                 filters=[nf2, nf2, nf2, nf2], stride=1, dilation=1,
@@ -180,6 +150,5 @@ class Xception_DeepLabv3Plus_nskips(BaseModel):
         x1, skip2 = self.xception_part3(x1)
         x1, skip3 = self.xception_part4(x1)
         x2 = self.xception_part5(x1)
-
         return x2, skip1, skip2, skip3
 

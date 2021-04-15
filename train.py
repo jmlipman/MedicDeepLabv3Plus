@@ -43,6 +43,8 @@ def get_arguments():
             help="Learning rate")
     parser.add_argument("--wd", type=float, default="0",
             help="Weight decay")
+    parser.add_argument("--filters", type=int, default=32,
+            help="Number of filters (fewer filters -> lower GPU requirements)")
 
     # Validation
     parser.add_argument("--validation", type=str, default="",
@@ -122,7 +124,7 @@ def main(args):
     os.makedirs(args.output + "model")
 
     # Parameters required to initialize the model
-    model = MedicDeepLabv3Plus(modalities=1, n_classes=3)
+    model = MedicDeepLabv3Plus(modalities=1, n_classes=3, first_filters=args.filters)
     model.initialize(device=args.device, output=args.output,
             model_state=args.model_state)
 
@@ -142,7 +144,7 @@ def main(args):
             val_loader = [] # So that len(val_loader) = 0
 
         # Loss function
-        loss = Loss("CrossEntropyDiceLoss")
+        loss = Loss("CrossEntropyDiceLoss_multiple") # Deep supervision
 
         # Optimizer
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr,

@@ -133,8 +133,8 @@ class BaseModel(nn.Module):
 
             # Save model after every epoch
             torch.save(self.state_dict(), self.out_path + "model/MedicDeepLabv3Plus-model-" + str(e))
-            if e > 2 and os.path.exists(self.out_path + "model/MedicDeepLabv3Plus-model-"+str(e-2)):
-                os.remove(self.out_path + "model/MedicDeepLabv3Plus-model-" + str(e-2))
+            if e > 1 and os.path.exists(self.out_path + "model/MedicDeepLabv3Plus-model-"+str(e-1)):
+                os.remove(self.out_path + "model/MedicDeepLabv3Plus-model-" + str(e-1))
 
             e += 1
 
@@ -187,7 +187,7 @@ class BaseModel(nn.Module):
 
                     results[id_] = Measure.all(y_pred_cpu, y_true_cpu)
 
-                test_loader.dataset.save(y_pred_cpu[0],
+                test_loader.dataset.save(y_pred_cpu[0], info,
                         self.out_path + id_)
 
         # Gather results (multiprocessing)

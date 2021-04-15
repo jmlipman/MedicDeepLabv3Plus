@@ -3,6 +3,10 @@ import nibabel as nib
 import numpy as np
 from lib.utils import np2tensor
 from lib.data.BaseDataset import BaseDataset
+from scipy.ndimage import zoom
+
+def resizeHalf(matrix):
+    return zoom(matrix, zoom=(1, 0.5, 0.5), order=0)
 
 class DataWrapper(BaseDataset):
     """Left hemisphere + Whole brain segmentation.
@@ -73,12 +77,17 @@ class DataWrapper(BaseDataset):
         info = {}
         info["id"] = study + "_" + timepoint + "_" + subject
 
-        X = nib.load(target + self.scanName).get_data()
+        Img = nib.load(target + self.scanName)
+        info["image_path"] = target + self.scanName
+        X = Img.get_data()
+        if len(X.shape) == 3:
+            X = np.expand_dims(X, -1)
         X = np.moveaxis(X, -1, 0) # Move channels to the beginning
         X = np.moveaxis(X, -1, 1) # Move depth after channels
 
         X = (X - X.mean()) / X.std()
 
+        Yall = []
         try:
             # During training, the GT is separated into two hemispheres
 
@@ -93,23 +102,29 @@ class DataWrapper(BaseDataset):
 
             Y_brain = Y_brain.transpose(2, 0, 1)
             Y_contra = Y_contra.transpose(2, 0, 1)
-            Y_both = Y_brain + Y_contra
-            # I assume that Y_contra is included in Y_brain
-            # So, substracting the Y_contra should display the other hemisphere
-            Y_hemi = Y_brain - Y_contra
-            # But, if there are voxels in Y_contra that don't belong to Y_brain
-            # there will be -1s, and the following line should clean them.
-            Y_hemi[Y_hemi!=1] = 0
-            Y = np.stack([1.0*(Y_both==0), Y_contra, Y_hemi], axis=0)
+
+            brain128, contra128 = resizeHalf(Y_brain), resizeHalf(Y_contra)
+            brain64, contra64 = resizeHalf(brain128), resizeHalf(contra128)
+
+            brains = [Y_brain, brain128, brain64]
+            contras = [Y_contra, contra128, contra64]
+
+            for br, con in zip(brains, contras):
+                Y_both = br + con
+                Y_hemi = br - con
+                Y_hemi[Y_hemi!=1] = 0
+                Y = np.stack([1.0*(Y_both==0), con, Y_hemi], axis=0)
+                Yall.append(Y)
+
         except FileNotFoundError:
             # Labels to assess the final masks are not provided
-            Y = np.array(0)
+            Yall.append(np.array(0))
         
         W = np.array(0) # Not used
 
-        return [np2tensor(X)], [np2tensor(Y)], info, [np2tensor(W)]
+        return [np2tensor(X)], [np2tensor(y) for y in Yall], info, [np2tensor(W)]
 
-    def save(self, output, loc):
+    def save(self, output, info, loc):
         """Saves a mask containing both brainmask and hemisphere.
            Size of the input: 3,18,256,256
            Size of the output: 256,256,18,3
@@ -124,5 +139,8 @@ class DataWrapper(BaseDataset):
         output = output.transpose(2, 3, 1, 0) # HWDC
         final = 1.0*(output >= 0.5) # 256,256,18,3
 
-        nib.save(nib.Nifti1Image(final[:,:,:,1], np.eye(4)), loc + "_brainmask.nii.gz")
-        nib.save(nib.Nifti1Image(final[:,:,:,2], np.eye(4)), loc + "_contra.nii.gz")
+        # Load the original image to utilize its affine and header
+        Img = nib.load(info["image_path"][0])
+
+        nib.save(nib.Nifti1Image(final[:,:,:,1], affine=Img.affine, header=Img.header), loc + "_brainmask.nii.gz")
+        nib.save(nib.Nifti1Image(final[:,:,:,2], affine=Img.affine, header=Img.header), loc + "_contra.nii.gz")

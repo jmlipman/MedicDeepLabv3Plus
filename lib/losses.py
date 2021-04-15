@@ -56,3 +56,17 @@ class Loss:
         ce = self.CrossEntropyLoss()
         dice = self.DiceLoss()
         return ce + dice
+
+    def CrossEntropyDiceLoss_multiple(self):
+        """CRBrain project, multiple outputs.
+        """
+        ce1 = _CrossEntropy(self.output[0], self.y_true[0])
+        ce2 = _CrossEntropy(self.output[1], self.y_true[1])
+        ce3 = _CrossEntropy(self.output[2], self.y_true[2])
+
+        dice1 = _Dice(self.output[0], self.y_true[0])
+        dice2 = _Dice(self.output[1], self.y_true[1])
+        dice3 = _Dice(self.output[2], self.y_true[2])
+
+        return ce1 + ce2 + ce3 + dice1 + dice2 + dice3
+
