@@ -1,9 +1,9 @@
 MedicDeepLabv3+
 ======================
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4009212.svg)](https://doi.org/10.5281/zenodo.4009212) (Software)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4943765.svg)](https://doi.org/10.5281/zenodo.4943765) (Software)
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4009246.svg)](https://doi.org/10.5281/zenodo.4009246) (Trained models)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4943897.svg)](https://doi.org/10.5281/zenodo.4943897) (Trained models)
 
 Repository of MedicDeepLabv3+
 
